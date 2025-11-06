@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import { GameState, MIDINote } from '../types';
 
 // Canvas visualization constants
@@ -28,19 +28,16 @@ export const GameView: React.FC<GameViewProps> = ({
   onBack,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [visibleNotes, setVisibleNotes] = useState<MIDINote[]>([]);
 
-  // Update visible notes based on current time
-  useEffect(() => {
-    if (!gameState.currentSong) return;
+  // Update visible notes based on current time (optimized with useMemo)
+  const visibleNotes = useMemo(() => {
+    if (!gameState.currentSong) return [];
 
     const currentTime = gameState.currentTime;
     
-    const visible = notes.filter(
+    return notes.filter(
       note => note.time >= currentTime && note.time <= currentTime + LOOK_AHEAD_TIME
     );
-    
-    setVisibleNotes(visible);
   }, [gameState.currentTime, notes, gameState.currentSong]);
 
   // Draw the timeline visualization

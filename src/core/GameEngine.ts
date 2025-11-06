@@ -66,10 +66,12 @@ export class GameEngine {
       
       this.notifyStateChange();
       
-      console.log(`Song loaded: ${song.title}`, {
-        notes: this.notes.length,
-        duration: song.duration,
-      });
+      if (import.meta.env.DEV) {
+        console.log(`Song loaded: ${song.title}`, {
+          notes: this.notes.length,
+          duration: song.duration,
+        });
+      }
     } catch (error) {
       console.error('Error loading song:', error);
       throw error;
@@ -113,21 +115,31 @@ export class GameEngine {
   }
 
   /**
-   * Main game loop
+   * Main game loop with optimized rendering
    */
   private startGameLoop(): void {
-    const updateGame = () => {
+    let lastUpdateTime = performance.now();
+    const TARGET_FPS = 60;
+    const FRAME_TIME = 1000 / TARGET_FPS;
+    
+    const updateGame = (timestamp: number) => {
       if (!this.gameState.isPlaying) {
         return;
       }
 
-      this.gameState.currentTime = this.audioManager.getCurrentTime();
-      this.notifyStateChange();
+      const elapsed = timestamp - lastUpdateTime;
+      
+      // Only update if enough time has passed
+      if (elapsed >= FRAME_TIME) {
+        this.gameState.currentTime = this.audioManager.getCurrentTime();
+        this.notifyStateChange();
+        lastUpdateTime = timestamp - (elapsed % FRAME_TIME); // Maintain consistent timing
+      }
 
       this.animationFrameId = requestAnimationFrame(updateGame);
     };
 
-    updateGame();
+    this.animationFrameId = requestAnimationFrame(updateGame);
   }
 
   /**

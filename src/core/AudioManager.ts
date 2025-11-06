@@ -18,7 +18,9 @@ export class AudioManager {
 
     // Mark as initialized - Tone.js will auto-initialize on first user interaction
     this.isInitialized = true;
-    console.log('Audio manager ready (context will start on user interaction)');
+    if (import.meta.env.DEV) {
+      console.log('Audio manager ready (context will start on user interaction)');
+    }
   }
 
   /**
@@ -29,16 +31,27 @@ export class AudioManager {
       // Dispose of existing players
       this.dispose();
 
-      // Create new players
-      this.vocalPlayer = new Tone.Player(vocalPath).toDestination();
-      this.instrumentalPlayer = new Tone.Player(instrumentalPath).toDestination();
+      // Create new players with error handling
+      this.vocalPlayer = new Tone.Player({
+        url: vocalPath,
+        onerror: (error) => console.error('Error loading vocal stem:', error)
+      }).toDestination();
+      
+      this.instrumentalPlayer = new Tone.Player({
+        url: instrumentalPath,
+        onerror: (error) => console.error('Error loading instrumental stem:', error)
+      }).toDestination();
 
       // Wait for audio to load
       await Tone.loaded();
 
-      console.log('Audio stems loaded successfully');
+      if (import.meta.env.DEV) {
+        console.log('Audio stems loaded successfully');
+      }
     } catch (error) {
       console.error('Error loading audio stems:', error);
+      // Clean up on error
+      this.dispose();
       throw new Error('Failed to load audio stems');
     }
   }

@@ -37,7 +37,8 @@ const App: React.FC = () => {
     return () => {
       gameEngine.dispose();
     };
-  }, [gameEngine]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // gameEngine is stable from useState, safe to omit from deps
 
   // Handle song selection
   const handleSelectSong = async (songId: string) => {

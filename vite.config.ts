@@ -7,4 +7,17 @@ export default defineConfig({
   server: {
     port: 3000,
   },
+  build: {
+    // Optimize chunk splitting for better caching
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
+          'tone-vendor': ['tone', '@tonejs/midi'],
+        },
+      },
+    },
+    // Increase chunk size warning limit (we're loading audio libraries)
+    chunkSizeWarningLimit: 600,
+  },
 })
