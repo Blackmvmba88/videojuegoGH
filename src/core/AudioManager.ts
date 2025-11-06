@@ -1,0 +1,133 @@
+import * as Tone from 'tone';
+
+/**
+ * AudioManager - Manages audio playback using Tone.js
+ */
+export class AudioManager {
+  private vocalPlayer: Tone.Player | null = null;
+  private instrumentalPlayer: Tone.Player | null = null;
+  private isInitialized = false;
+
+  /**
+   * Initialize the audio context (must be called after user interaction)
+   */
+  async initialize(): Promise<void> {
+    if (this.isInitialized) {
+      return;
+    }
+
+    try {
+      await Tone.start();
+      this.isInitialized = true;
+      console.log('Audio context initialized');
+    } catch (error) {
+      console.error('Error initializing audio context:', error);
+      throw new Error('Failed to initialize audio context');
+    }
+  }
+
+  /**
+   * Load audio stems (vocal and instrumental)
+   */
+  async loadStems(vocalPath: string, instrumentalPath: string): Promise<void> {
+    try {
+      // Dispose of existing players
+      this.dispose();
+
+      // Create new players
+      this.vocalPlayer = new Tone.Player(vocalPath).toDestination();
+      this.instrumentalPlayer = new Tone.Player(instrumentalPath).toDestination();
+
+      // Wait for both to load
+      await Promise.all([
+        Tone.loaded(),
+      ]);
+
+      console.log('Audio stems loaded successfully');
+    } catch (error) {
+      console.error('Error loading audio stems:', error);
+      throw new Error('Failed to load audio stems');
+    }
+  }
+
+  /**
+   * Start playback of both stems
+   */
+  play(): void {
+    if (!this.vocalPlayer || !this.instrumentalPlayer) {
+      console.warn('Audio stems not loaded');
+      return;
+    }
+
+    Tone.Transport.start();
+    this.vocalPlayer.start();
+    this.instrumentalPlayer.start();
+  }
+
+  /**
+   * Pause playback
+   */
+  pause(): void {
+    Tone.Transport.pause();
+  }
+
+  /**
+   * Stop playback and reset
+   */
+  stop(): void {
+    if (this.vocalPlayer) {
+      this.vocalPlayer.stop();
+    }
+    if (this.instrumentalPlayer) {
+      this.instrumentalPlayer.stop();
+    }
+    Tone.Transport.stop();
+    Tone.Transport.position = 0;
+  }
+
+  /**
+   * Set volume for vocal stem (0-1)
+   */
+  setVocalVolume(volume: number): void {
+    if (this.vocalPlayer) {
+      this.vocalPlayer.volume.value = Tone.gainToDb(volume);
+    }
+  }
+
+  /**
+   * Set volume for instrumental stem (0-1)
+   */
+  setInstrumentalVolume(volume: number): void {
+    if (this.instrumentalPlayer) {
+      this.instrumentalPlayer.volume.value = Tone.gainToDb(volume);
+    }
+  }
+
+  /**
+   * Get current playback time in seconds
+   */
+  getCurrentTime(): number {
+    return Tone.Transport.seconds;
+  }
+
+  /**
+   * Seek to a specific time
+   */
+  seek(time: number): void {
+    Tone.Transport.seconds = time;
+  }
+
+  /**
+   * Clean up resources
+   */
+  dispose(): void {
+    if (this.vocalPlayer) {
+      this.vocalPlayer.dispose();
+      this.vocalPlayer = null;
+    }
+    if (this.instrumentalPlayer) {
+      this.instrumentalPlayer.dispose();
+      this.instrumentalPlayer = null;
+    }
+  }
+}
