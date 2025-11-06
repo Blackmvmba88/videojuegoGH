@@ -75,14 +75,14 @@ export class GameEngine {
   /**
    * Start playing the current song
    */
-  startGame(): void {
+  async startGame(): Promise<void> {
     if (!this.gameState.currentSong) {
       console.warn('No song loaded');
       return;
     }
 
     this.gameState.isPlaying = true;
-    this.audioManager.play();
+    await this.audioManager.play();
     this.startGameLoop();
     this.notifyStateChange();
   }

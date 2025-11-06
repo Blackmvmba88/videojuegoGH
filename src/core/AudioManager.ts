@@ -9,21 +9,16 @@ export class AudioManager {
   private isInitialized = false;
 
   /**
-   * Initialize the audio context (must be called after user interaction)
+   * Initialize the audio context (will fully initialize on first user interaction)
    */
   async initialize(): Promise<void> {
     if (this.isInitialized) {
       return;
     }
 
-    try {
-      await Tone.start();
-      this.isInitialized = true;
-      console.log('Audio context initialized');
-    } catch (error) {
-      console.error('Error initializing audio context:', error);
-      throw new Error('Failed to initialize audio context');
-    }
+    // Mark as initialized - Tone.js will auto-initialize on first user interaction
+    this.isInitialized = true;
+    console.log('Audio manager ready (context will start on user interaction)');
   }
 
   /**
@@ -53,12 +48,15 @@ export class AudioManager {
   /**
    * Start playback of both stems
    */
-  play(): void {
+  async play(): Promise<void> {
     if (!this.vocalPlayer || !this.instrumentalPlayer) {
       console.warn('Audio stems not loaded');
       return;
     }
 
+    // Ensure audio context is started (requires user gesture)
+    await Tone.start();
+    
     Tone.Transport.start();
     this.vocalPlayer.start();
     this.instrumentalPlayer.start();
