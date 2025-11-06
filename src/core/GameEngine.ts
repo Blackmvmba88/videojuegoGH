@@ -14,6 +14,8 @@ export class GameEngine {
   private notes: MIDINote[] = [];
   private animationFrameId: number | null = null;
   private onStateChange?: (state: GameState) => void;
+  private totalNotesHit = 0;
+  private totalAccuracy = 0;
 
   constructor() {
     this.audioManager = new AudioManager();
@@ -59,6 +61,8 @@ export class GameEngine {
       this.gameState.score = 0;
       this.gameState.combo = 0;
       this.gameState.accuracy = 0;
+      this.totalNotesHit = 0;
+      this.totalAccuracy = 0;
       
       this.notifyStateChange();
       
@@ -148,7 +152,11 @@ export class GameEngine {
     
     this.gameState.score += points;
     this.gameState.combo += 1;
-    this.gameState.accuracy = (this.gameState.accuracy + accuracy) / 2;
+    
+    // Calculate running average accuracy
+    this.totalNotesHit += 1;
+    this.totalAccuracy += accuracy;
+    this.gameState.accuracy = this.totalAccuracy / this.totalNotesHit;
     
     this.notifyStateChange();
   }

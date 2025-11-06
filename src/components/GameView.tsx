@@ -1,6 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { GameState, MIDINote } from '../types';
 
+// Canvas visualization constants
+const LOOK_AHEAD_TIME = 3; // seconds to show notes in advance
+const HIT_ZONE_Y_OFFSET = 100; // pixels from bottom for hit zone
+const HIT_ZONE_HEIGHT = 60; // height of the hit zone in pixels
+const HIT_ZONE_PADDING = 50; // padding from canvas edges
+const NOTE_RADIUS = 15; // radius of note circles
+const MIDDLE_C_MIDI = 60; // MIDI note number for middle C
+const PITCH_RANGE = 24; // Range of pitches to display (2 octaves)
+
 interface GameViewProps {
   gameState: GameState;
   notes: MIDINote[];
@@ -25,11 +34,10 @@ export const GameView: React.FC<GameViewProps> = ({
   useEffect(() => {
     if (!gameState.currentSong) return;
 
-    const lookAheadTime = 3; // seconds
     const currentTime = gameState.currentTime;
     
     const visible = notes.filter(
-      note => note.time >= currentTime && note.time <= currentTime + lookAheadTime
+      note => note.time >= currentTime && note.time <= currentTime + LOOK_AHEAD_TIME
     );
     
     setVisibleNotes(visible);
@@ -51,33 +59,48 @@ export const GameView: React.FC<GameViewProps> = ({
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Draw hit zone
-    const hitZoneY = canvas.height - 100;
+    const hitZoneY = canvas.height - HIT_ZONE_Y_OFFSET;
     ctx.strokeStyle = '#00ff88';
     ctx.lineWidth = 3;
-    ctx.strokeRect(50, hitZoneY - 30, canvas.width - 100, 60);
+    ctx.strokeRect(
+      HIT_ZONE_PADDING,
+      hitZoneY - HIT_ZONE_HEIGHT / 2,
+      canvas.width - HIT_ZONE_PADDING * 2,
+      HIT_ZONE_HEIGHT
+    );
 
     // Draw notes
-    const lookAheadTime = 3;
-    const pixelsPerSecond = canvas.height / lookAheadTime;
+    const pixelsPerSecond = canvas.height / LOOK_AHEAD_TIME;
 
     visibleNotes.forEach(note => {
       const timeUntilNote = note.time - gameState.currentTime;
       const y = canvas.height - (timeUntilNote * pixelsPerSecond);
       
-      // Map MIDI pitch to x position (simplified)
-      const x = ((note.pitch - 60) / 24) * (canvas.width - 100) + 50;
+      // Map MIDI pitch to x position
+      const normalizedPitch = (note.pitch - MIDDLE_C_MIDI) / PITCH_RANGE;
+      const x = normalizedPitch * (canvas.width - HIT_ZONE_PADDING * 2) + HIT_ZONE_PADDING;
       
       // Draw note
       ctx.fillStyle = '#ff006e';
       ctx.beginPath();
-      ctx.arc(Math.max(50, Math.min(canvas.width - 50, x)), y, 15, 0, Math.PI * 2);
+      ctx.arc(
+        Math.max(HIT_ZONE_PADDING, Math.min(canvas.width - HIT_ZONE_PADDING, x)),
+        y,
+        NOTE_RADIUS,
+        0,
+        Math.PI * 2
+      );
       ctx.fill();
       
       // Draw note name
       ctx.fillStyle = '#ffffff';
       ctx.font = '12px Arial';
       ctx.textAlign = 'center';
-      ctx.fillText(note.name, Math.max(50, Math.min(canvas.width - 50, x)), y - 20);
+      ctx.fillText(
+        note.name,
+        Math.max(HIT_ZONE_PADDING, Math.min(canvas.width - HIT_ZONE_PADDING, x)),
+        y - 20
+      );
     });
 
     // Draw current time indicator

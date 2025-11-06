@@ -33,10 +33,8 @@ export class AudioManager {
       this.vocalPlayer = new Tone.Player(vocalPath).toDestination();
       this.instrumentalPlayer = new Tone.Player(instrumentalPath).toDestination();
 
-      // Wait for both to load
-      await Promise.all([
-        Tone.loaded(),
-      ]);
+      // Wait for audio to load
+      await Tone.loaded();
 
       console.log('Audio stems loaded successfully');
     } catch (error) {
