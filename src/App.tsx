@@ -10,6 +10,7 @@ const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>(() => gameEngine.getGameState());
   const [songs, setSongs] = useState<Song[]>([]);
   const [currentNotes, setCurrentNotes] = useState<MIDINote[]>([]);
+  const [currentPitch, setCurrentPitch] = useState<{ frequency: number; midiNote: number }>({ frequency: 0, midiNote: 0 });
   const [view, setView] = useState<'selector' | 'game'>('selector');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,9 +26,14 @@ const App: React.FC = () => {
         gameEngine.setOnStateChange((newState) => {
           setGameState(newState);
         });
+        
+        // Set up pitch change listener
+        gameEngine.setOnPitchChange((frequency, midiNote) => {
+          setCurrentPitch({ frequency, midiNote });
+        });
       } catch (err) {
         console.error('Failed to initialize game engine:', err);
-        setError('Failed to initialize audio system. Please refresh the page.');
+        setError('Failed to initialize audio system or microphone. Please check permissions and refresh the page.');
       }
     };
 
@@ -108,6 +114,7 @@ const App: React.FC = () => {
         <GameView
           gameState={gameState}
           notes={currentNotes}
+          currentPitch={currentPitch}
           onStart={handleStart}
           onPause={handlePause}
           onStop={handleStop}

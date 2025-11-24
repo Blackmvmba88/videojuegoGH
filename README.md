@@ -5,10 +5,12 @@ A vocal rhythm game prototype inspired by Guitar Hero, but focused 100% on voice
 ## 🎮 Features
 
 - **MIDI-based Gameplay**: Visual timeline based on MIDI vocal melodies
+- **Real-time Pitch Detection**: Uses your microphone to detect your singing pitch
 - **Song Selection**: Easy-to-use interface for selecting and loading songs
 - **Real-time Visualization**: See notes coming down the timeline as you play
 - **Scoring System**: Score points and build combos based on vocal accuracy
 - **Audio Stems Support**: Separate vocal and instrumental tracks for better gameplay
+- **Pitch Feedback**: See your current pitch displayed in real-time as you sing
 - **Extensible Architecture**: Easy to add new songs and expand functionality
 
 ## 📁 Project Structure
@@ -35,6 +37,7 @@ vocal-rhythm-game/
 │   │   ├── GameEngine.ts        # Main game logic controller
 │   │   ├── AudioManager.ts      # Audio playback management (Tone.js)
 │   │   ├── MIDIParser.ts        # MIDI file parsing (@tonejs/midi)
+│   │   ├── PitchDetector.ts     # Real-time pitch detection from microphone
 │   │   └── SongLoader.ts        # Song library management
 │   ├── types/
 │   │   └── index.ts             # TypeScript type definitions
@@ -125,12 +128,25 @@ To add a new song to the game:
 
 ## 🎯 How to Play
 
-1. **Select a Song**: Choose from available songs in the song selector
-2. **Start the Game**: Click "Start" to begin playing
-3. **Sing Along**: Watch the notes come down the timeline
-4. **Hit the Notes**: Sing the correct pitch at the right time
-5. **Build Combos**: Hit consecutive notes to increase your score multiplier
-6. **Track Your Progress**: Monitor your score, combo, and accuracy
+1. **Grant Microphone Access**: When prompted, allow the game to access your microphone
+2. **Select a Song**: Choose from available songs in the song selector
+3. **Start the Game**: Click "Start" to begin playing
+4. **Sing Along**: Watch the notes (pink circles) come down the timeline
+5. **Match the Pitch**: Sing the correct pitch to hit the notes
+   - Your current pitch is shown as a cyan circle in the hit zone
+   - Your pitch and note name are displayed in the stats panel
+6. **Hit the Notes**: When your pitch matches a note, you'll score points!
+7. **Build Combos**: Hit consecutive notes to increase your score multiplier
+8. **Track Your Progress**: Monitor your score, combo, accuracy, and current pitch
+
+## 🎤 Pitch Detection System
+
+The game uses real-time pitch detection to analyze your voice:
+- **Autocorrelation Algorithm**: Accurate pitch detection using the YIN algorithm
+- **Web Audio API**: Browser-native audio processing for low latency
+- **Pitch Tolerance**: ±1 semitone tolerance for note hits
+- **Visual Feedback**: See your pitch position relative to target notes
+- **Hit Detection**: Automatic scoring when your pitch matches expected notes
 
 ## 🛠️ Technology Stack
 
@@ -138,6 +154,7 @@ To add a new song to the game:
 - **Build Tool**: Vite
 - **Audio Engine**: Tone.js
 - **MIDI Parsing**: @tonejs/midi
+- **Pitch Detection**: Web Audio API with Autocorrelation (YIN algorithm)
 - **Styling**: CSS3 with modern features
 
 ## 📦 Available Scripts
@@ -155,6 +172,8 @@ Main game logic controller that coordinates all game systems:
 - Game state management
 - Score calculation and combo tracking
 - Game loop and timing
+- Pitch detection integration
+- Note hit detection and matching
 
 ### AudioManager
 Handles all audio playback using Tone.js:
@@ -162,6 +181,13 @@ Handles all audio playback using Tone.js:
 - Stem loading (vocal and instrumental)
 - Playback controls (play, pause, stop, seek)
 - Volume control for individual stems
+
+### PitchDetector
+Real-time pitch detection from microphone input:
+- Microphone access and initialization
+- Autocorrelation-based pitch detection (YIN algorithm)
+- Frequency to MIDI note conversion
+- Continuous pitch monitoring during gameplay
 
 ### MIDIParser
 Parses MIDI files and extracts vocal notes:
@@ -191,6 +217,7 @@ Modify scoring and gameplay in `src/core/GameEngine.ts`:
 - Combo multipliers
 - Accuracy calculation
 - Note hit detection window
+- Pitch tolerance settings
 
 ### Visualization
 Update the canvas rendering in `src/components/GameView.tsx`:
@@ -198,11 +225,12 @@ Update the canvas rendering in `src/components/GameView.tsx`:
 - Timeline visualization
 - Hit zone styling
 - Color schemes
+- Player pitch indicator appearance
 
 ## 🚧 Future Enhancements
 
 Potential features to add:
-- [ ] Real-time pitch detection from microphone input
+- [x] Real-time pitch detection from microphone input ✅ **IMPLEMENTED**
 - [ ] Lyric display synchronized with MIDI
 - [ ] Multiple difficulty levels per song
 - [ ] High score persistence (localStorage or backend)
@@ -212,6 +240,8 @@ Potential features to add:
 - [ ] Practice mode with tempo adjustment
 - [ ] Achievement system
 - [ ] Leaderboards
+- [ ] Pitch calibration tool for different microphones
+- [ ] Visual effects for note hits and misses
 
 ## 📄 License
 
@@ -229,10 +259,23 @@ Contributions are welcome! To contribute:
 
 ## 🐛 Troubleshooting
 
+### Microphone Not Working
+- Ensure you've granted microphone permissions when prompted
+- Check your browser's privacy settings for microphone access
+- Try using HTTPS (some browsers require secure contexts for microphone)
+- Verify your microphone is working in other applications
+- Check browser console for any error messages
+
 ### Audio Not Playing
 - Ensure you've clicked a button to initialize the audio context (browser requirement)
 - Check that audio files are in the correct format (MP3, WAV, OGG)
 - Verify file paths in `SongLoader.ts`
+
+### Pitch Detection Not Accurate
+- Ensure you're in a quiet environment
+- Speak/sing directly into your microphone
+- Check your microphone input levels in system settings
+- Try adjusting the pitch tolerance in `GameEngine.ts` if needed
 
 ### MIDI Not Loading
 - Confirm MIDI files are valid (test in a MIDI player)

@@ -13,6 +13,7 @@ const PITCH_RANGE = 24; // Range of pitches to display (2 octaves)
 interface GameViewProps {
   gameState: GameState;
   notes: MIDINote[];
+  currentPitch: { frequency: number; midiNote: number };
   onStart: () => void;
   onPause: () => void;
   onStop: () => void;
@@ -22,6 +23,7 @@ interface GameViewProps {
 export const GameView: React.FC<GameViewProps> = ({
   gameState,
   notes,
+  currentPitch,
   onStart,
   onPause,
   onStop,
@@ -108,7 +110,38 @@ export const GameView: React.FC<GameViewProps> = ({
     ctx.lineTo(canvas.width, hitZoneY);
     ctx.stroke();
 
-  }, [visibleNotes, gameState.currentTime]);
+    // Draw player's pitch indicator (if singing)
+    if (currentPitch.frequency > 0 && gameState.isPlaying) {
+      const normalizedPlayerPitch = (currentPitch.midiNote - MIDDLE_C_MIDI) / PITCH_RANGE;
+      const playerX = normalizedPlayerPitch * (canvas.width - HIT_ZONE_PADDING * 2) + HIT_ZONE_PADDING;
+      
+      // Draw player pitch indicator at hit zone
+      ctx.fillStyle = '#00ffff';
+      ctx.globalAlpha = 0.8;
+      ctx.beginPath();
+      ctx.arc(
+        Math.max(HIT_ZONE_PADDING, Math.min(canvas.width - HIT_ZONE_PADDING, playerX)),
+        hitZoneY,
+        NOTE_RADIUS + 5,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+      ctx.globalAlpha = 1.0;
+      
+      // Draw pitch name
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 14px Arial';
+      ctx.textAlign = 'center';
+      const noteName = midiToNoteName(currentPitch.midiNote);
+      ctx.fillText(
+        noteName,
+        Math.max(HIT_ZONE_PADDING, Math.min(canvas.width - HIT_ZONE_PADDING, playerX)),
+        hitZoneY + 30
+      );
+    }
+
+  }, [visibleNotes, gameState.currentTime, currentPitch, gameState.isPlaying]);
 
   if (!gameState.currentSong) {
     return <div>Loading...</div>;
@@ -133,6 +166,14 @@ export const GameView: React.FC<GameViewProps> = ({
           <div className="stat">
             <span className="label">Accuracy</span>
             <span className="value">{Math.floor(gameState.accuracy * 100)}%</span>
+          </div>
+          <div className="stat">
+            <span className="label">Your Pitch</span>
+            <span className="value">
+              {currentPitch.frequency > 0 
+                ? `${midiToNoteName(currentPitch.midiNote)} (${Math.round(currentPitch.frequency)}Hz)`
+                : '---'}
+            </span>
           </div>
         </div>
       </div>
@@ -186,4 +227,11 @@ function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
   return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+function midiToNoteName(midiNote: number): string {
+  const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+  const octave = Math.floor(midiNote / 12) - 1;
+  const noteIndex = midiNote % 12;
+  return `${noteNames[noteIndex]}${octave}`;
 }

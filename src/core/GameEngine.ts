@@ -1,6 +1,7 @@
 import { AudioManager } from './AudioManager';
 import { MIDIParser } from './MIDIParser';
 import { SongLoader } from './SongLoader';
+import { PitchDetector } from './PitchDetector';
 import { GameState, MIDINote, Song } from '../types';
 
 /**
@@ -10,17 +11,29 @@ export class GameEngine {
   private audioManager: AudioManager;
   private midiParser: MIDIParser;
   private songLoader: SongLoader;
+  private pitchDetector: PitchDetector;
   private gameState: GameState;
   private notes: MIDINote[] = [];
   private animationFrameId: number | null = null;
   private onStateChange?: (state: GameState) => void;
+  private onPitchChange?: (frequency: number, midiNote: number) => void;
   private totalNotesHit = 0;
   private totalAccuracy = 0;
+  private currentPitch: number = 0;
+  private currentMidiNote: number = 0;
+  private activeNotes: Set<number> = new Set(); // Track which notes are currently in the hit window
+  private hitNotes: Set<number> = new Set(); // Track which notes have been hit
+
+  // Game configuration constants
+  private readonly HIT_WINDOW = 0.5; // seconds before/after note time for hit detection
+  private readonly PITCH_TOLERANCE = 1; // Allow +/- 1 semitone for note hits
+  private readonly MAX_PITCH_DIFF = this.PITCH_TOLERANCE + 1; // Maximum pitch difference for accuracy calculation
 
   constructor() {
     this.audioManager = new AudioManager();
     this.midiParser = new MIDIParser();
     this.songLoader = new SongLoader();
+    this.pitchDetector = new PitchDetector();
     
     this.gameState = {
       currentSong: null,
@@ -37,6 +50,7 @@ export class GameEngine {
    */
   async initialize(): Promise<void> {
     await this.audioManager.initialize();
+    await this.pitchDetector.initialize();
   }
 
   /**
@@ -63,6 +77,8 @@ export class GameEngine {
       this.gameState.accuracy = 0;
       this.totalNotesHit = 0;
       this.totalAccuracy = 0;
+      this.activeNotes.clear();
+      this.hitNotes.clear();
       
       this.notifyStateChange();
       
@@ -90,6 +106,21 @@ export class GameEngine {
     this.gameState.isPlaying = true;
     await this.audioManager.play();
     this.startGameLoop();
+    
+    // Start pitch detection
+    this.pitchDetector.startListening((frequency, midiNote) => {
+      this.currentPitch = frequency;
+      this.currentMidiNote = midiNote;
+      
+      // Notify UI of pitch change
+      if (this.onPitchChange) {
+        this.onPitchChange(frequency, midiNote);
+      }
+      
+      // Check if pitch matches any active notes
+      this.checkPitchMatch(midiNote);
+    });
+    
     this.notifyStateChange();
   }
 
@@ -99,6 +130,7 @@ export class GameEngine {
   pauseGame(): void {
     this.gameState.isPlaying = false;
     this.audioManager.pause();
+    this.pitchDetector.stopListening();
     this.stopGameLoop();
     this.notifyStateChange();
   }
@@ -109,8 +141,11 @@ export class GameEngine {
   stopGame(): void {
     this.gameState.isPlaying = false;
     this.audioManager.stop();
+    this.pitchDetector.stopListening();
     this.stopGameLoop();
     this.gameState.currentTime = 0;
+    this.activeNotes.clear();
+    this.hitNotes.clear();
     this.notifyStateChange();
   }
 
@@ -132,6 +167,7 @@ export class GameEngine {
       // Only update if enough time has passed
       if (elapsed >= FRAME_TIME) {
         this.gameState.currentTime = this.audioManager.getCurrentTime();
+        this.updateActiveNotes();
         this.notifyStateChange();
         lastUpdateTime = timestamp - (elapsed % FRAME_TIME); // Maintain consistent timing
       }
@@ -149,6 +185,65 @@ export class GameEngine {
     if (this.animationFrameId !== null) {
       cancelAnimationFrame(this.animationFrameId);
       this.animationFrameId = null;
+    }
+  }
+
+  /**
+   * Update which notes are currently in the hit window
+   */
+  private updateActiveNotes(): void {
+    const currentTime = this.gameState.currentTime;
+    
+    this.activeNotes.clear();
+    
+    // Find notes that are currently in the hit window
+    for (const note of this.notes) {
+      const noteIndex = this.notes.indexOf(note);
+      
+      // Skip notes that have already been hit
+      if (this.hitNotes.has(noteIndex)) {
+        continue;
+      }
+      
+      // Check if note is in the hit window
+      const timeDiff = Math.abs(note.time - currentTime);
+      if (timeDiff <= this.HIT_WINDOW) {
+        this.activeNotes.add(noteIndex);
+      }
+      
+      // Check if note was missed (passed the hit window)
+      if (note.time < currentTime - this.HIT_WINDOW && !this.hitNotes.has(noteIndex)) {
+        this.processNoteMiss();
+        this.hitNotes.add(noteIndex); // Mark as processed to avoid multiple misses
+      }
+    }
+  }
+
+  /**
+   * Check if the detected pitch matches any active notes
+   */
+  private checkPitchMatch(detectedMidiNote: number): void {
+    for (const noteIndex of this.activeNotes) {
+      const note = this.notes[noteIndex];
+      
+      // Check if pitch matches within tolerance
+      const pitchDiff = Math.abs(note.pitch - detectedMidiNote);
+      
+      if (pitchDiff <= this.PITCH_TOLERANCE && !this.hitNotes.has(noteIndex)) {
+        // Calculate accuracy based on pitch difference (0 = perfect, 1 = at tolerance edge)
+        const accuracy = 1 - (pitchDiff / this.MAX_PITCH_DIFF);
+        
+        // Hit the note!
+        this.processNoteHit(accuracy);
+        this.hitNotes.add(noteIndex);
+        
+        if (import.meta.env.DEV) {
+          console.log(`Note hit! Expected: ${note.pitch}, Detected: ${detectedMidiNote}, Accuracy: ${accuracy.toFixed(2)}`);
+        }
+        
+        // Break after hitting one note to avoid multiple hits in a single frame
+        break;
+      }
     }
   }
 
@@ -219,6 +314,23 @@ export class GameEngine {
   }
 
   /**
+   * Set a callback for pitch changes
+   */
+  setOnPitchChange(callback: (frequency: number, midiNote: number) => void): void {
+    this.onPitchChange = callback;
+  }
+
+  /**
+   * Get current detected pitch
+   */
+  getCurrentPitch(): { frequency: number; midiNote: number } {
+    return {
+      frequency: this.currentPitch,
+      midiNote: this.currentMidiNote,
+    };
+  }
+
+  /**
    * Notify listeners of state changes
    */
   private notifyStateChange(): void {
@@ -232,6 +344,7 @@ export class GameEngine {
    */
   dispose(): void {
     this.stopGameLoop();
+    this.pitchDetector.dispose();
     this.audioManager.dispose();
     this.midiParser.clear();
   }
