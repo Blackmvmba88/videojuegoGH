@@ -24,6 +24,11 @@ export class GameEngine {
   private activeNotes: Set<number> = new Set(); // Track which notes are currently in the hit window
   private hitNotes: Set<number> = new Set(); // Track which notes have been hit
 
+  // Game configuration constants
+  private readonly HIT_WINDOW = 0.5; // seconds before/after note time for hit detection
+  private readonly PITCH_TOLERANCE = 1; // Allow +/- 1 semitone for note hits
+  private readonly MAX_PITCH_DIFF = this.PITCH_TOLERANCE + 1; // Maximum pitch difference for accuracy calculation
+
   constructor() {
     this.audioManager = new AudioManager();
     this.midiParser = new MIDIParser();
@@ -188,7 +193,6 @@ export class GameEngine {
    */
   private updateActiveNotes(): void {
     const currentTime = this.gameState.currentTime;
-    const HIT_WINDOW = 0.5; // seconds before/after note time
     
     this.activeNotes.clear();
     
@@ -203,12 +207,12 @@ export class GameEngine {
       
       // Check if note is in the hit window
       const timeDiff = Math.abs(note.time - currentTime);
-      if (timeDiff <= HIT_WINDOW) {
+      if (timeDiff <= this.HIT_WINDOW) {
         this.activeNotes.add(noteIndex);
       }
       
       // Check if note was missed (passed the hit window)
-      if (note.time < currentTime - HIT_WINDOW && !this.hitNotes.has(noteIndex)) {
+      if (note.time < currentTime - this.HIT_WINDOW && !this.hitNotes.has(noteIndex)) {
         this.processNoteMiss();
         this.hitNotes.add(noteIndex); // Mark as processed to avoid multiple misses
       }
@@ -219,17 +223,15 @@ export class GameEngine {
    * Check if the detected pitch matches any active notes
    */
   private checkPitchMatch(detectedMidiNote: number): void {
-    const PITCH_TOLERANCE = 1; // Allow +/- 1 semitone
-    
     for (const noteIndex of this.activeNotes) {
       const note = this.notes[noteIndex];
       
       // Check if pitch matches within tolerance
       const pitchDiff = Math.abs(note.pitch - detectedMidiNote);
       
-      if (pitchDiff <= PITCH_TOLERANCE && !this.hitNotes.has(noteIndex)) {
+      if (pitchDiff <= this.PITCH_TOLERANCE && !this.hitNotes.has(noteIndex)) {
         // Calculate accuracy based on pitch difference (0 = perfect, 1 = at tolerance edge)
-        const accuracy = 1 - (pitchDiff / (PITCH_TOLERANCE + 1));
+        const accuracy = 1 - (pitchDiff / this.MAX_PITCH_DIFF);
         
         // Hit the note!
         this.processNoteHit(accuracy);

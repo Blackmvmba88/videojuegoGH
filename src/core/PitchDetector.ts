@@ -10,6 +10,11 @@ export class PitchDetector {
   private onPitchDetected?: (frequency: number, midiNote: number) => void;
   private rafId: number | null = null;
 
+  // Pitch detection constants
+  private readonly MIN_SIGNAL_THRESHOLD = 0.01;
+  private readonly CORRELATION_THRESHOLD = 0.9;
+  private readonly MIN_CORRELATION_THRESHOLD = 0.01;
+
   /**
    * Initialize the pitch detector with microphone access
    */
@@ -94,8 +99,7 @@ export class PitchDetector {
    * Autocorrelation algorithm for pitch detection
    * Based on the YIN algorithm
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private autoCorrelate(buffer: any, sampleRate: number): number {
+  private autoCorrelate(buffer: Float32Array, sampleRate: number): number {
     // Find the size of the buffer
     const size = buffer.length;
     
@@ -107,7 +111,7 @@ export class PitchDetector {
     rms = Math.sqrt(rms / size);
     
     // If RMS is too low, there's not enough signal (silence or very quiet)
-    if (rms < 0.01) {
+    if (rms < this.MIN_SIGNAL_THRESHOLD) {
       return -1;
     }
 
@@ -128,7 +132,7 @@ export class PitchDetector {
     for (let offset = 1; offset < size; offset++) {
       const correlation = correlations[offset];
       
-      if (correlation > 0.9 && correlation > correlations[offset - 1]) {
+      if (correlation > this.CORRELATION_THRESHOLD && correlation > correlations[offset - 1]) {
         foundGoodCorrelation = true;
       }
       
@@ -142,7 +146,7 @@ export class PitchDetector {
       }
     }
 
-    if (bestCorrelation > 0.01 && bestOffset !== -1) {
+    if (bestCorrelation > this.MIN_CORRELATION_THRESHOLD && bestOffset !== -1) {
       const fundamentalFreq = sampleRate / bestOffset;
       return fundamentalFreq;
     }
