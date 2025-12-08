@@ -8,6 +8,11 @@ interface SongSelectorProps {
   onSelectSong: (songId: string) => void;
 }
 
+const getDifficultyTranslation = (difficulty: string, t: ReturnType<typeof useLanguage>['t']): string => {
+  const key = difficulty as 'easy' | 'medium' | 'hard';
+  return t.difficulty[key] || difficulty;
+};
+
 export const SongSelector: React.FC<SongSelectorProps> = ({ songs, onSelectSong }) => {
   const { t } = useLanguage();
 
@@ -23,7 +28,7 @@ export const SongSelector: React.FC<SongSelectorProps> = ({ songs, onSelectSong 
               <h3>{song.title}</h3>
               <p className="artist">{song.artist}</p>
               <div className="song-details">
-                <span className="difficulty">{t.difficulty[song.difficulty as keyof typeof t.difficulty]}</span>
+                <span className="difficulty">{getDifficultyTranslation(song.difficulty, t)}</span>
                 <span className="duration">{Math.floor(song.duration / 60)}:{(song.duration % 60).toString().padStart(2, '0')}</span>
                 {song.bpm && <span className="bpm">{song.bpm} BPM</span>}
               </div>

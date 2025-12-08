@@ -21,13 +21,21 @@ export const useLanguage = (): LanguageContextType => {
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<string>(() => {
     // Try to load saved language from localStorage
-    const saved = localStorage.getItem('language');
-    return saved || defaultLanguage;
+    try {
+      const saved = localStorage.getItem('language');
+      return saved || defaultLanguage;
+    } catch {
+      return defaultLanguage;
+    }
   });
 
   const setLanguage = (lang: string) => {
     setLanguageState(lang);
-    localStorage.setItem('language', lang);
+    try {
+      localStorage.setItem('language', lang);
+    } catch {
+      // Silently fail if localStorage is unavailable
+    }
     // Update document title
     document.title = translations[lang].app.title;
   };
