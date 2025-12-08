@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useMemo } from 'react';
 import { GameState, MIDINote } from '../types';
+import { useLanguage } from '../i18n/LanguageContext';
 
 // Canvas visualization constants
 const LOOK_AHEAD_TIME = 3; // seconds to show notes in advance
@@ -30,6 +31,7 @@ export const GameView: React.FC<GameViewProps> = ({
   onBack,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const { t } = useLanguage();
 
   // Update visible notes based on current time (optimized with useMemo)
   const visibleNotes = useMemo(() => {
@@ -156,19 +158,19 @@ export const GameView: React.FC<GameViewProps> = ({
         </div>
         <div className="game-stats">
           <div className="stat">
-            <span className="label">Score</span>
+            <span className="label">{t.gameView.score}</span>
             <span className="value">{gameState.score}</span>
           </div>
           <div className="stat">
-            <span className="label">Combo</span>
+            <span className="label">{t.gameView.combo}</span>
             <span className="value">{gameState.combo}x</span>
           </div>
           <div className="stat">
-            <span className="label">Accuracy</span>
+            <span className="label">{t.gameView.accuracy}</span>
             <span className="value">{Math.floor(gameState.accuracy * 100)}%</span>
           </div>
           <div className="stat">
-            <span className="label">Your Pitch</span>
+            <span className="label">{t.gameView.yourPitch}</span>
             <span className="value">
               {currentPitch.frequency > 0 
                 ? `${midiToNoteName(currentPitch.midiNote)} (${Math.round(currentPitch.frequency)}Hz)`
@@ -190,18 +192,18 @@ export const GameView: React.FC<GameViewProps> = ({
       <div className="game-controls">
         {!gameState.isPlaying ? (
           <button onClick={onStart} className="btn btn-primary">
-            {gameState.currentTime > 0 ? 'Resume' : 'Start'}
+            {gameState.currentTime > 0 ? t.gameView.resume : t.gameView.start}
           </button>
         ) : (
           <button onClick={onPause} className="btn btn-warning">
-            Pause
+            {t.gameView.pause}
           </button>
         )}
         <button onClick={onStop} className="btn btn-danger">
-          Stop
+          {t.gameView.stop}
         </button>
         <button onClick={onBack} className="btn btn-secondary">
-          Back to Song Selection
+          {t.gameView.backToSongSelection}
         </button>
       </div>
 

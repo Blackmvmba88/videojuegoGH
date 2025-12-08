@@ -3,9 +3,11 @@ import { SongSelector } from './components/SongSelector';
 import { GameView } from './components/GameView';
 import { GameEngine } from './core/GameEngine';
 import { GameState, Song, MIDINote } from './types';
+import { LanguageProvider, useLanguage } from './i18n/LanguageContext';
 import './styles/App.css';
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
+  const { t } = useLanguage();
   const [gameEngine] = useState(() => new GameEngine());
   const [gameState, setGameState] = useState<GameState>(() => gameEngine.getGameState());
   const [songs, setSongs] = useState<Song[]>([]);
@@ -85,8 +87,8 @@ const App: React.FC = () => {
     return (
       <div className="app loading">
         <div className="loading-message">
-          <h2>Loading...</h2>
-          <p>Preparing your song...</p>
+          <h2>{t.app.loading}</h2>
+          <p>{t.app.preparingSong}</p>
         </div>
       </div>
     );
@@ -96,10 +98,10 @@ const App: React.FC = () => {
     return (
       <div className="app error">
         <div className="error-message">
-          <h2>Error</h2>
+          <h2>{t.app.error}</h2>
           <p>{error}</p>
           <button onClick={() => setError(null)} className="btn btn-primary">
-            Dismiss
+            {t.app.dismiss}
           </button>
         </div>
       </div>
@@ -122,6 +124,14 @@ const App: React.FC = () => {
         />
       )}
     </div>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
   );
 };
 

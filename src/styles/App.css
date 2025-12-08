@@ -32,6 +32,42 @@
 /* Song Selector */
 .song-selector {
   animation: fadeIn 0.5s ease-in;
+  position: relative;
+}
+
+.language-selector {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 10;
+}
+
+.language-select {
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border: 2px solid #00ff88;
+  font-size: 1rem;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.language-select:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: #00dd77;
+}
+
+.language-select:focus {
+  outline: none;
+  border-color: #00ff88;
+  box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.2);
+}
+
+.language-select option {
+  background: #1a1a2e;
+  color: #ffffff;
 }
 
 .song-selector h1 {
