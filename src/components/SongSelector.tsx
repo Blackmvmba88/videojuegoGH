@@ -1,4 +1,5 @@
 import React from 'react';
+import { AudioImport } from './AudioImport';
 import { Song } from '../types';
 import { useLanguage } from '../i18n/LanguageContext';
 import { LanguageSelector } from './LanguageSelector';
@@ -36,6 +37,7 @@ export const SongSelector: React.FC<SongSelectorProps> = ({ songs, onSelectSong 
           </div>
         ))}
       </div>
+      <AudioImport />
       <div className="instructions">
         <h3>{t.songSelector.howToPlay}</h3>
         <ul>
