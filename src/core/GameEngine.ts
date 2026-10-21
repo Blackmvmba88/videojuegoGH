@@ -197,8 +197,8 @@ export class GameEngine {
     this.activeNotes.clear();
     
     // Find notes that are currently in the hit window
-    for (const note of this.notes) {
-      const noteIndex = this.notes.indexOf(note);
+    for (let noteIndex = 0; noteIndex < this.notes.length; noteIndex++) {
+      const note = this.notes[noteIndex];
       
       // Skip notes that have already been hit
       if (this.hitNotes.has(noteIndex)) {
