@@ -5,6 +5,7 @@ import { GameEngine } from './core/GameEngine';
 import { GameState, Song, MIDINote } from './types';
 import { LanguageProvider, useLanguage } from './i18n/LanguageContext';
 import './styles/App.css';
+import { ScoreLab } from './components/ScoreLab';
 
 const AppContent: React.FC = () => {
   const { t } = useLanguage();
@@ -128,6 +129,7 @@ const AppContent: React.FC = () => {
 };
 
 const App: React.FC = () => {
+  if (new URLSearchParams(window.location.search).get('mode') === 'score') return <ScoreLab />;
   return (
     <LanguageProvider>
       <AppContent />
