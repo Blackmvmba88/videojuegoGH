@@ -32,3 +32,6 @@ This is **not** stem separation or automatic audio transcription. It introduces 
 - Check pitches below string range return no positions.
 - Check invalid note durations, duplicate track IDs and confidence out of range.
 - Review any model-produced data before saving.
+
+## Executable follow-up
+See [slice review and gate](SCORE_SLICE_REVIEW.md). Run `npm run gate`; open `?mode=score` for local MIDI/JSON and manual TAB review.
