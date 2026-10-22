@@ -1,6 +1,6 @@
 # PR 6 — executable MIDI / score / manual TAB slice
 
-Reviewed original head `3d76fd57094f38716d13dfed218417e2e9189485` (2 files, +107 lines). Open draft, no PR workflow runs returned on 2026-10-22.
+Reviewed original head `3d76fd57094f38716d13dfed218417e2e9189485` (2 files, +107 lines). Initially open draft, with no PR workflow runs returned on 2026-10-22. During this work PR #6 was concurrently merged at 06:47:42 UTC, including only original head 3d76fd5. This follow-up slice is delivered separately.
 
 ## Findings and implemented scope
 - Original score model compiled successfully locally. No tests or CI gate existed.
@@ -28,7 +28,7 @@ Evidence: original build PASS; updated 12/12 tests PASS; updated production buil
 Before declaring the UI ready: browser smoke must import guitar+bass MIDI, change tracks/notes, retain a selected position, report malformed JSON, display empty/out-of-range notes, and verify no microphone request at `?mode=score`. Require green remote gate on the current SHA or record equivalent local evidence if Actions is unavailable. Keep draft until UI smoke passes; do not silently treat workflow presence as branch protection.
 
 ## Integration decision
-Score schema, hardened validation, deterministic fret candidates and MIDI-to-score adapter are suitable for integration with the passing core gate. The manual review screen is delivered as a preview; not a validated full-game release. No merge to main has been performed.
+Score schema, hardened validation, deterministic fret candidates and MIDI-to-score adapter are suitable for integration with the passing core gate. The manual review screen is delivered as a preview; not a validated full-game release. This follow-up slice has not been merged to main; PR #6 itself was merged concurrently by another actor.
 
 ## Next priorities (acceptance criteria)
 1. **P0 — UI smoke and review persistence:** execute browser acceptance; persist score edits plus TAB decisions separately from source notes, with stable note IDs, tuning/capo and provenance. Reload must reproduce choices. Route reviewed tracks into the game via an explicit adapter, retaining source timing.
