@@ -42,7 +42,7 @@ export function fretCandidates(
 ): FretPosition[] {
   if (!Number.isInteger(midiPitch) || midiPitch < 0 || midiPitch > 127 ||
       !Number.isInteger(maxFret) || maxFret < 0 || maxFret > 36 ||
-      tuning.some(pitch => !Number.isInteger(pitch) || pitch < 0 || pitch > 127)) {
+      tuning.length === 0 || tuning.some(pitch => !Number.isInteger(pitch) || pitch < 0 || pitch > 127)) {
     throw new RangeError('Invalid MIDI pitch, tuning or fret limit');
   }
   return tuning.flatMap((openPitch, i) => {
@@ -51,23 +51,44 @@ export function fretCandidates(
   });
 }
 
-export function validateScore(score: MusicScore): string[] {
+/** Runtime boundary for JSON and future transcription adapters. Velocity is normalized 0..1. */
+export function validateScore(score: unknown): string[] {
   const errors: string[] = [];
+  if (!isRecord(score)) return ['Score must be an object'];
   if (score.schemaVersion !== '1.0') errors.push('Unsupported schema version');
-  if (!score.title.trim()) errors.push('Title is required');
-  if (!Number.isFinite(score.bpm) || score.bpm <= 0) errors.push('BPM must be positive');
+  if (typeof score.title !== 'string' || !score.title.trim()) errors.push('Title is required');
+  if (typeof score.bpm !== 'number' || !Number.isFinite(score.bpm) || score.bpm <= 0) errors.push('BPM must be positive');
+  if (!Array.isArray(score.tracks)) return [...errors, 'Tracks must be an array'];
   const ids = new Set<string>();
-  for (const track of score.tracks) {
-    if (!track.id || ids.has(track.id)) errors.push('Track IDs must be unique and nonempty');
-    ids.add(track.id);
-    for (const note of track.notes) {
-      if (!Number.isInteger(note.pitch) || note.pitch < 0 || note.pitch > 127 ||
-          !Number.isFinite(note.startSeconds) || note.startSeconds < 0 ||
-          !Number.isFinite(note.durationSeconds) || note.durationSeconds <= 0 ||
-          (note.confidence !== undefined && (!Number.isFinite(note.confidence) || note.confidence < 0 || note.confidence > 1))) {
-        errors.push('Invalid note in track ' + track.id);
-      }
-    }
-  }
+  score.tracks.forEach((track, index) => {
+    const path = `tracks[${index}]`;
+    if (!isRecord(track)) { errors.push(`${path} must be an object`); return; }
+    if (typeof track.id !== 'string' || !track.id.trim() || ids.has(track.id)) errors.push(`${path}: Track IDs must be unique and nonempty`);
+    if (typeof track.id === 'string') ids.add(track.id);
+    if (typeof track.instrument !== 'string' || !['guitar', 'bass', 'drums', 'vocals', 'piano', 'other'].includes(String(track.instrument))) errors.push(`${path}: Invalid instrument`);
+    if (track.stemUrl !== undefined && typeof track.stemUrl !== 'string') errors.push(`${path}: Invalid stem URL`);
+    if (!Array.isArray(track.notes)) { errors.push(`${path}: Notes must be an array`); return; }
+    track.notes.forEach((note, i) => {
+      if (!isRecord(note) ||
+          typeof note.pitch !== 'number' || !Number.isInteger(note.pitch) || note.pitch < 0 || note.pitch > 127 ||
+          typeof note.startSeconds !== 'number' || !Number.isFinite(note.startSeconds) || note.startSeconds < 0 ||
+          typeof note.durationSeconds !== 'number' || !Number.isFinite(note.durationSeconds) || note.durationSeconds <= 0 ||
+          !Number.isFinite(note.startSeconds + note.durationSeconds) ||
+          (note.confidence !== undefined && !unitInterval(note.confidence)) ||
+          (note.velocity !== undefined && !unitInterval(note.velocity))) errors.push(`${path}.notes[${i}]: Invalid note`);
+    });
+  });
   return errors;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+function unitInterval(value: unknown): boolean {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1;
+}
+export function parseScore(value: unknown): MusicScore {
+  const errors = validateScore(value);
+  if (errors.length) throw new Error(errors.join('; '));
+  return value as MusicScore;
 }

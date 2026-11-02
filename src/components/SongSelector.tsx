@@ -37,6 +37,7 @@ export const SongSelector: React.FC<SongSelectorProps> = ({ songs, onSelectSong 
           </div>
         ))}
       </div>
+      <p><a href="?mode=score">Abrir revisión MIDI / TAB</a></p>
       <AudioImport />
       <div className="instructions">
         <h3>{t.songSelector.howToPlay}</h3>
